@@ -4,7 +4,6 @@ def init_db():
     conn = sqlite3.connect("pos_demo.db")
     cursor = conn.cursor()
     
-    # Crear tablas
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS categorias (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +24,6 @@ def init_db():
         )
     """)
 
-    # Precargar categorías si está vacía
     cursor.execute("SELECT COUNT(*) FROM categorias")
     if cursor.fetchone()[0] == 0:
         cursor.executemany("INSERT INTO categorias (nombre) VALUES (?)", [
@@ -52,10 +50,46 @@ def obtener_productos():
     conn = sqlite3.connect("pos_demo.db")
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT p.id, p.nombre, p.precio_venta, c.nombre, p.stock 
+        SELECT p.id, p.codigo_barras, p.nombre, p.precio_costo, p.precio_venta, p.stock, c.nombre 
         FROM productos p
         JOIN categorias c ON p.categoria_id = c.id
     """)
     rows = cursor.fetchall()
     conn.close()
-    return [{"id": r[0], "nombre": r[1], "precio": r[2], "cat": r[3], "stock": r[4]} for r in rows]
+    return [{"id": r[0], "codigo": r[1], "nombre": r[2], "costo": r[3], "precio": r[4], "stock": r[5], "cat": r[6]} for r in rows]
+
+def obtener_categorias():
+    conn = sqlite3.connect("pos_demo.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, nombre FROM categorias")
+    rows = cursor.fetchall()
+    conn.close()
+    return {r[1]: r[0] for r in rows} # Retorna diccionario {"Categoría": id}
+
+def agregar_producto(codigo, nombre, categoria_id, costo, venta, stock):
+    conn = sqlite3.connect("pos_demo.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO productos (codigo_barras, nombre, categoria_id, precio_costo, precio_venta, stock)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (codigo, nombre, categoria_id, costo, venta, stock))
+    conn.commit()
+    conn.close()
+
+def actualizar_producto(prod_id, nombre, costo, venta, stock):
+    conn = sqlite3.connect("pos_demo.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE productos 
+        SET nombre = ?, precio_costo = ?, precio_venta = ?, stock = ?
+        WHERE id = ?
+    """, (nombre, costo, venta, stock, prod_id))
+    conn.commit()
+    conn.close()
+
+def eliminar_producto(prod_id):
+    conn = sqlite3.connect("pos_demo.db")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM productos WHERE id = ?", (prod_id,))
+    conn.commit()
+    conn.close()
