@@ -19,17 +19,61 @@ init_db()
 if "carrito" not in st.session_state:
   st.session_state.carrito = []
 
-# --- NAVEGACIÓN EN EL SIDEBAR ---
+if "autenticado" not in st.session_state:
+  st.session_state.autenticado = False
+  st.session_state.rol = None
+
+# --- SISTEMA DE LOGIN / CONTRASEÑA ---
+if not st.session_state.autenticado:
+  st.title("🔐 Acceso al Sistema POS")
+  st.markdown("Por favor, ingresa tus credenciales para continuar.")
+
+  with st.form("form_login"):
+    usuario_input = st.text_input("Usuario")
+    password_input = st.text_input("Contraseña", type="password")
+    btn_login = st.form_submit_button("Ingresar")
+
+    if btn_login:
+      # Definimos contraseñas y usuarios de ejemplo (puedes cambiarlas aquí)
+      if usuario_input == "cajero" and password_input == "1234":
+        st.session_state.autenticado = True
+        st.session_state.rol = "Cajero"
+        st.success("¡Bienvenido, Cajero!")
+        st.rerun()
+      elif usuario_input == "admin" and password_input == "admin2026":
+        st.session_state.autenticado = True
+        st.session_state.rol = "Administrador"
+        st.success("¡Bienvenido, Administrador!")
+        st.rerun()
+      else:
+        st.error("Usuario o contraseña incorrectos.")
+  st.stop()  # Detiene la ejecución aquí hasta que inicie sesión
+
+# --- MENÚ LATERAL UNA VEZ AUTENTICADO ---
 with st.sidebar:
+  st.title(f"👤 Rol: {st.session_state.rol}")
+  if st.button("🚪 Cerrar Sesión"):
+    st.session_state.autenticado = False
+    st.session_state.rol = None
+    st.rerun()
+
+  st.divider()
   st.title("📌 Menú")
-  opcion_menu = st.radio(
-      "Selecciona una vista:",
-      [
-          "🛒 POS (Caja)",
-          "📊 Ventas y Cierre de Turno",
-          "⚙️ Administración & Excel",
-      ],
-  )
+
+  if st.session_state.rol == "Cajero":
+    opcion_menu = st.radio(
+        "Selecciona una vista:",
+        ["🛒 POS (Caja)", "📊 Ventas y Cierre de Turno"],
+    )
+  else:
+    opcion_menu = st.radio(
+        "Selecciona una vista:",
+        [
+            "🛒 POS (Caja)",
+            "📊 Ventas y Cierre de Turno",
+            "⚙️ Administración & Excel",
+        ],
+    )
   st.divider()
 
 # ==========================================
@@ -192,7 +236,7 @@ elif opcion_menu == "📊 Ventas y Cierre de Turno":
         )
 
 # ==========================================
-# VISTA 3: ADMINISTRACIÓN & EXCEL
+# VISTA 3: ADMINISTRACIÓN & EXCEL (SOLO ADMIN)
 # ==========================================
 else:
   st.title("⚙️ Administración de Inventario")
