@@ -43,7 +43,6 @@ if opcion_menu == "🛒 POS (Caja)":
   st.title("🛒 POS Comercial para PYMES")
   st.caption("Sistema de caja rápida para ventas en mostrador")
 
-  # Categorías como botones
   st.subheader("Categorías")
   cols_cat = st.columns(len(lista_categorias))
   if "cat_seleccionada" not in st.session_state:
@@ -64,7 +63,6 @@ if opcion_menu == "🛒 POS (Caja)":
 
   st.divider()
 
-  # Botones de productos
   prods_filtrados = (
       productos
       if st.session_state.cat_seleccionada == "Todas"
@@ -90,7 +88,6 @@ if opcion_menu == "🛒 POS (Caja)":
         st.toast(f"Añadido: {prod['nombre']}", icon="✅")
         st.rerun()
 
-  # Sidebar Carrito
   with st.sidebar:
     st.header("🧾 Carrito de Ventas")
     if not st.session_state.carrito:
@@ -113,7 +110,6 @@ if opcion_menu == "🛒 POS (Caja)":
       if st.button(
           "🔴 Procesar Venta", type="primary", use_container_width=True
       ):
-        # Guardar venta real en la base de datos
         registrar_venta(total, metodo, st.session_state.carrito)
         st.success(f"¡Venta de ${total:,.0f} registrada con éxito! ({metodo})")
         st.session_state.carrito = []
@@ -129,13 +125,12 @@ elif opcion_menu == "📊 Ventas y Cierre de Turno":
 
   if not ventas_hoy:
     st.info(
-        "No se han registrado ventas en el día de hoy todavía. ¡Empieza a"
-        " vender desde la pestaña POS!"
+        "No se han registrado ventas hoy. ¡Empieza a vender desde la pestaña"
+        " POS!"
     )
   else:
     df_ventas = pd.DataFrame(ventas_hoy)
 
-    # Métricas principales
     total_recaudado = df_ventas["total"].sum()
     total_transacciones = len(df_ventas)
 
@@ -145,20 +140,15 @@ elif opcion_menu == "📊 Ventas y Cierre de Turno":
 
     st.divider()
 
-    # Desglose por método de pago
     st.subheader("Desglose por Método de Pago")
-    df_metodos = (
-        df_ventas.groupby("metodo")["total"].sum().reset_index()
-    )
+    df_metodos = df_ventas.groupby("metodo")["total"].sum().reset_index()
     st.dataframe(df_metodos, use_container_width=True)
 
     st.divider()
 
-    # Detalle de transacciones
     st.subheader("Listado de Ventas del Turno")
     st.dataframe(df_ventas, use_container_width=True)
 
-    # Sección de Cierre de Caja
     st.markdown("---")
     st.subheader("🔒 Realizar Cierre de Turno")
 
@@ -246,7 +236,7 @@ else:
           st.success("¡Producto actualizado exitosamente!")
           st.rerun()
 
-        if btn_eliminalr := btn_eliminar:
+        if btn_eliminar:
           eliminar_producto(prod_sel["id"])
           st.warning("Producto eliminado.")
           st.rerun()
