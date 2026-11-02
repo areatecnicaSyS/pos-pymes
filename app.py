@@ -26,6 +26,20 @@ if "autenticado" not in st.session_state:
   st.session_state.autenticado = False
   st.session_state.rol = None
 
+# --- CARGAR CREDENCIALES SEGURAS DESDE SECRETS ---
+try:
+  C_USER = st.secrets["users"]["cajero_user"]
+  C_PASS = st.secrets["users"]["cajero_pass"]
+  CA_USER = st.secrets["users"]["cajeroadmin_user"]
+  CA_PASS = st.secrets["users"]["cajeroadmin_pass"]
+  A_USER = st.secrets["users"]["admin_user"]
+  A_PASS = st.secrets["users"]["admin_pass"]
+except:
+  # Valores por defecto en caso de prueba local sin configurar el secrets.toml
+  C_USER, C_PASS = "cajero", "1234"
+  CA_USER, CA_PASS = "cajeroadmin", "5678"
+  A_USER, A_PASS = "admin", "admin2026"
+
 # --- SISTEMA DE LOGIN / CONTRASEÑA ---
 if not st.session_state.autenticado:
   st.title("💻 POS DEMO - Área Técnica SYS")
@@ -38,17 +52,17 @@ if not st.session_state.autenticado:
     btn_login = st.form_submit_button("Ingresar")
 
     if btn_login:
-      if usuario_input == "cajero" and password_input == "1234":
+      if usuario_input == C_USER and password_input == C_PASS:
         st.session_state.autenticado = True
         st.session_state.rol = "Cajero"
         st.success("¡Bienvenido, Cajero!")
         st.rerun()
-      elif usuario_input == "cajeroadmin" and password_input == "5678":
+      elif usuario_input == CA_USER and password_input == CA_PASS:
         st.session_state.autenticado = True
         st.session_state.rol = "Cajero-Admin"
         st.success("¡Bienvenido, Cajero-Admin!")
         st.rerun()
-      elif usuario_input == "admin" and password_input == "admin2026":
+      elif usuario_input == A_USER and password_input == A_PASS:
         st.session_state.autenticado = True
         st.session_state.rol = "Administrador"
         st.success("¡Bienvenido, Administrador!")
