@@ -4,6 +4,7 @@ import streamlit as st
 from database import (
     actualizar_producto,
     agregar_producto,
+    agregar_stock,
     eliminar_producto,
     init_db,
     obtener_categorias,
@@ -42,6 +43,11 @@ if not st.session_state.autenticado:
         st.session_state.rol = "Cajero"
         st.success("¡Bienvenido, Cajero!")
         st.rerun()
+      elif usuario_input == "cajeroadmin" and password_input == "5678":
+        st.session_state.autenticado = True
+        st.session_state.rol = "Cajero-Admin"
+        st.success("¡Bienvenido, Cajero-Admin!")
+        st.rerun()
       elif usuario_input == "admin" and password_input == "admin2026":
         st.session_state.autenticado = True
         st.session_state.rol = "Administrador"
@@ -75,19 +81,29 @@ with st.sidebar:
         "Selecciona una vista:",
         ["🛒 POS (Caja)", "📊 Ventas y Cierre de Turno"],
     )
-  else:
+  elif st.session_state.rol == "Cajero-Admin":
     opcion_menu = st.radio(
         "Selecciona una vista:",
         [
             "🛒 POS (Caja)",
             "📊 Ventas y Cierre de Turno",
-            "⚙️ Administración & Excel",
+            "📦 Ingresar Stock Nuevo",
+        ],
+    )
+  else:  # Administrador
+    opcion_menu = st.radio(
+        "Selecciona una vista:",
+        [
+            "🛒 POS (Caja)",
+            "📊 Ventas y Cierre de Turno",
+            "📦 Ingresar Stock Nuevo",
+            "⚙️ Administración Total & Excel",
         ],
     )
   st.divider()
 
 # ==========================================
-# VISTA 1: POS (CAJA RÁPIDA CON BOTONES)
+# VISTA 1: POS (CAJA RÁPIDA)
 # ==========================================
 if opcion_menu == "🛒 POS (Caja)":
   productos = obtener_productos()
@@ -246,10 +262,51 @@ elif opcion_menu == "📊 Ventas y Cierre de Turno":
         )
 
 # ==========================================
-# VISTA 3: ADMINISTRACIÓN & EXCEL (SOLO ADMIN)
+# VISTA 3: INGRESAR STOCK NUEVO (CAJERO-ADMIN Y ADMIN)
+# ==========================================
+elif opcion_menu == "📦 Ingresar Stock Nuevo":
+  st.title("📦 Ingreso de Nueva Mercancía")
+  st.caption("Suma stock adicional al inventario actual sin modificar precios")
+
+  productos = obtener_productos()
+
+  if productos:
+    with st.form("form_sumar_stock"):
+      prod_stock_nombre = st.selectbox(
+          "Selecciona el producto a reabastecer:",
+          [p["nombre"] for p in productos],
+          key="sel_stock_ca",
+      )
+      prod_actual = next(
+          p for p in productos if p["nombre"] == prod_stock_nombre
+      )
+
+      st.info(f"Stock actual en bodega: **{prod_actual['stock']} unidades**")
+
+      cantidad_a_agregar = st.number_input(
+          "Cantidad de unidades que ingresan (a sumar):",
+          min_value=1,
+          step=1,
+          value=10,
+      )
+
+      btn_sumar = st.form_submit_button("➕ Registrar Ingreso de Stock")
+
+      if btn_sumar:
+        agregar_stock(prod_actual["id"], cantidad_a_agregar)
+        st.success(
+            f"¡Se han sumado {cantidad_a_agregar} unidades a"
+            f" '{prod_actual['nombre']}' exitosamente!"
+        )
+        st.rerun()
+  else:
+    st.warning("No hay productos registrados en el sistema.")
+
+# ==========================================
+# VISTA 4: ADMINISTRACIÓN TOTAL & EXCEL (SOLO ADMIN)
 # ==========================================
 else:
-  st.title("⚙️ Administración de Inventario")
+  st.title("⚙️ Administración Total de Inventario")
 
   productos = obtener_productos()
   df_productos = pd.DataFrame(productos)
@@ -269,9 +326,10 @@ else:
 
   st.divider()
 
-  tab1, tab2 = st.tabs(
-      ["📦 Gestionar Productos Existentes", "➕ Agregar Nuevo Producto"]
-  )
+  tab1, tab2 = st.tabs([
+      "📦 Gestionar / Editar Precios y Productos",
+      "🆕 Crear Producto Nuevo",
+  ])
 
   with tab1:
     st.dataframe(df_productos, use_container_width=True)
@@ -279,11 +337,13 @@ else:
     st.markdown("### Editar o Eliminar Producto")
     if productos:
       prod_sel_nombre = st.selectbox(
-          "Selecciona un producto:", [p["nombre"] for p in productos]
+          "Selecciona un producto:",
+          [p["nombre"] for p in productos],
+          key="sel_edit_admin",
       )
       prod_sel = next(p for p in productos if p["nombre"] == prod_sel_nombre)
 
-      with st.form("form_editar"):
+      with st.form("form_editar_admin"):
         n_nombre = st.text_input("Nombre", value=prod_sel["nombre"])
         n_costo = st.number_input(
             "Precio Costo", value=float(prod_sel["costo"]), step=500.0
@@ -291,7 +351,11 @@ else:
         n_venta = st.number_input(
             "Precio Venta", value=float(prod_sel["precio"]), step=500.0
         )
-        n_stock = st.number_input("Stock", value=int(prod_sel["stock"]), step=1)
+        n_stock = st.number_input(
+            "Stock Base (Edición general)",
+            value=int(prod_sel["stock"]),
+            step=1,
+        )
 
         c1, c2 = st.columns(2)
         btn_actualizar = c1.form_submit_button("💾 Guardar Cambios")
@@ -311,7 +375,7 @@ else:
 
   with tab2:
     categorias_map = obtener_categorias()
-    with st.form("form_agregar"):
+    with st.form("form_agregar_admin"):
       a_codigo = st.text_input("Código de Barras (Único)")
       a_nombre = st.text_input("Nombre del Producto")
       a_cat = st.selectbox("Categoría", list(categorias_map.keys()))
