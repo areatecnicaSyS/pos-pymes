@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+pos_demo.db
+.venv/
+.vscode/
